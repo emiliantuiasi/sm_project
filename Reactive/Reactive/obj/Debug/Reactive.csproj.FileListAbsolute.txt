@@ -45,3 +45,14 @@ D:\esmproj\Reactive (3)\Reactive\Reactive\obj\Debug\Reactive.PlanetForm.resource
 D:\esmproj\Reactive (3)\Reactive\Reactive\obj\Debug\Reactive.csproj.GenerateResource.Cache
 D:\esmproj\Reactive (3)\Reactive\Reactive\obj\Debug\Reactive.exe
 D:\esmproj\Reactive (3)\Reactive\Reactive\obj\Debug\Reactive.pdb
+C:\Users\atome\Documents\SM_Project\sm_project\Reactive\Reactive\bin\Debug\Reactive.exe.config
+C:\Users\atome\Documents\SM_Project\sm_project\Reactive\Reactive\bin\Debug\Reactive.exe
+C:\Users\atome\Documents\SM_Project\sm_project\Reactive\Reactive\bin\Debug\Reactive.pdb
+C:\Users\atome\Documents\SM_Project\sm_project\Reactive\Reactive\obj\Debug\Reactive.csproj.AssemblyReference.cache
+C:\Users\atome\Documents\SM_Project\sm_project\Reactive\Reactive\obj\Debug\Reactive.csproj.SuggestedBindingRedirects.cache
+C:\Users\atome\Documents\SM_Project\sm_project\Reactive\Reactive\obj\Debug\Reactive.PlanetForm.resources
+C:\Users\atome\Documents\SM_Project\sm_project\Reactive\Reactive\obj\Debug\Reactive.csproj.GenerateResource.cache
+C:\Users\atome\Documents\SM_Project\sm_project\Reactive\Reactive\obj\Debug\Reactive.csproj.CoreCompileInputs.cache
+C:\Users\atome\Documents\SM_Project\sm_project\Reactive\Reactive\obj\Debug\Reactive.csproj.CopyComplete
+C:\Users\atome\Documents\SM_Project\sm_project\Reactive\Reactive\obj\Debug\Reactive.exe
+C:\Users\atome\Documents\SM_Project\sm_project\Reactive\Reactive\obj\Debug\Reactive.pdb

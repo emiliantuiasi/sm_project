@@ -137,6 +137,15 @@ namespace Reactive
                 }
             }
 
+            foreach (string k in ResourcePositions.Keys)
+            {
+                if (ResourcePositions[k] == position)
+                {
+                    Send(sender, Utils.Str("exit", ResourcePositions[k]));
+                    return;
+                }
+            }
+
             string[] t = position.Split();
             int x = Convert.ToInt32(t[0]);
             int y = Convert.ToInt32(t[1]);
@@ -156,15 +165,7 @@ namespace Reactive
                     return;
                 }
             }
-
-            foreach (string k in ResourcePositions.Keys)
-            {
-                if (ResourcePositions[k] == position)
-                {
-                    Send(sender, Utils.Str("exit", ResourcePositions[k]));
-                    return;
-                }
-            }
+           
             Send(sender, "move");
         }
 
