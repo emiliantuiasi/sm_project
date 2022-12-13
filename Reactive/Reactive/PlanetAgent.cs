@@ -106,16 +106,8 @@ namespace Reactive
                     HandleChange(message.Sender, parameters);
                     break;
 
-                case "pick-up":
-                    HandlePickUp(message.Sender, parameters);
-                    break;
-
-                case "carry":
-                    HandleCarry(message.Sender, parameters);
-                    break;
-
-                case "unload":
-                    HandleUnload(message.Sender);
+                case "out":
+                    HandleOut(message.Sender, parameters);
                     break;
 
                 default:
@@ -147,46 +139,40 @@ namespace Reactive
 
             foreach (string k in ResourcePositions.Keys)
             {
-                string[] t = position.Split();
-                int x = Convert.ToInt32(t[0]);
-                int y = Convert.ToInt32(t[1]);
-
-                string compPos1 = Utils.Str(x, y + 1);
-                string compPos2 = Utils.Str(x, y - 1);
-                string compPos3 = Utils.Str(x + 1, y);
-                string compPos4 = Utils.Str(x - 1, y + 1);
-
-
-                if (ResourcePositions[k] == compPos1 || ResourcePositions[k] == compPos2 || ResourcePositions[k] == compPos3 || ResourcePositions[k] == compPos4)
+                if (ResourcePositions[k] == position)
                 {
-
-                    //Send(sender, "exit " + k);
-                    ExplorerPositions.Remove(sender);
+                    Send(sender, Utils.Str("exit", ResourcePositions[k]));
                     return;
                 }
             }
 
+            string[] t = position.Split();
+            int x = Convert.ToInt32(t[0]);
+            int y = Convert.ToInt32(t[1]);
+
+            string compPos1 = Utils.Str(x, y + 1);
+            string compPos2 = Utils.Str(x, y - 1);
+            string compPos3 = Utils.Str(x + 1, y);
+            string compPos4 = Utils.Str(x - 1, y);
+
+            foreach (string k in ResourcePositions.Keys)
+            {
+
+                if (ResourcePositions[k] == compPos1 || ResourcePositions[k] == compPos2 || ResourcePositions[k] == compPos3 || ResourcePositions[k] == compPos4)
+                {
+
+                    Send(sender, Utils.Str("exit-found", ResourcePositions[k]));
+                    return;
+                }
+            }
+           
             Send(sender, "move");
         }
 
-        private void HandlePickUp(string sender, string position)
+        private void HandleOut(string sender, string position)
         {
-            Loads[sender] = position;
-            Send(sender, "move");
+            ExplorerPositions.Remove(sender);
         }
 
-        private void HandleCarry(string sender, string position)
-        {
-            ExplorerPositions[sender] = position;
-            string res = Loads[sender];
-            ResourcePositions[res] = position;
-            Send(sender, "move");
-        }
-
-        private void HandleUnload(string sender)
-        {
-            Loads.Remove(sender);
-            Send(sender, "move");
-        }
     }
 }

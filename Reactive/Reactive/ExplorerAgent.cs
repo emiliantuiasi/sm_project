@@ -1,6 +1,7 @@
 ﻿using ActressMas;
 using System;
 using System.Collections.Generic;
+using System.Windows.Forms.VisualStyles;
 
 namespace Reactive
 {
@@ -39,12 +40,22 @@ namespace Reactive
                 MoveRandomly();
                 Send("planet", Utils.Str("change", _x, _y));
             }
-            else if (action == "exit")
+            else if (action == "exit-found")
             {
                 // R4. If you detect a door, then go out
                 //_state = State.Carrying;
                 //_resourceCarried = parameters[0];
-                Send("planet", Utils.Str("pick-up", _resourceCarried));
+                _x = Convert.ToInt32(parameters[0]);
+                _y = Convert.ToInt32(parameters[1]);
+                Send("planet", Utils.Str("change", _x, _y));
+
+            }
+            else if (action == "exit")
+            {
+                // R4. If you detect a door, then go out
+                Send("planet", Utils.Str("out", _resourceCarried)); 
+
+                this.Stop();
 
             }
             else if (action == "move")
@@ -67,15 +78,5 @@ namespace Reactive
             }
         }
 
-        private void MoveToBase()
-        {
-            int dx = _x - Utils.Size / 2;
-            int dy = _y - Utils.Size / 2;
-
-            if (Math.Abs(dx) > Math.Abs(dy))
-                _x -= Math.Sign(dx);
-            else
-                _y -= Math.Sign(dy);
-        }
     }
 }
