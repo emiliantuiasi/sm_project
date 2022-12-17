@@ -12,9 +12,6 @@ namespace Reactive
         private State _state;
         private string _resourceCarried;
 
-
-        // todo here - add colors for each state {blue, red, green, orange} 
-
         public override void Setup()
         {
             Console.WriteLine("Starting " + Name);
@@ -22,7 +19,6 @@ namespace Reactive
             _x = Utils.Size / 2;
             _y = Utils.Size / 2;
             _state = State.Normal;
-
 
 
             Send("planet", Utils.Str("position", _x, _y));
@@ -39,7 +35,6 @@ namespace Reactive
 
             if (action == "emergency")
             {
-              //  Console.WriteLine("Emergency started!");
                 _state = State.Emergency;
             }
             if (action == "block")
@@ -58,7 +53,6 @@ namespace Reactive
             }
             else if (action == "exit")
             {
-                // R4. If you detect a door, then go out
                 Send("planet", Utils.Str("out", _resourceCarried));
                 this.Stop();
 
