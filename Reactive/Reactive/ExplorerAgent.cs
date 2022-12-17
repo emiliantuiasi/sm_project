@@ -1,6 +1,11 @@
 ﻿using ActressMas;
 using System;
 using System.Collections.Generic;
+<<<<<<< Updated upstream
+=======
+using System.Windows.Forms.VisualStyles;
+using static Reactive.Utils;
+>>>>>>> Stashed changes
 
 namespace Reactive
 {
@@ -10,7 +15,8 @@ namespace Reactive
         private State _state;
         private string _resourceCarried;
 
-        private enum State { Free, Carrying };
+
+        // todo here - add colors for each state {blue, red, green, orange} 
 
         public override void Setup()
         {
@@ -18,7 +24,7 @@ namespace Reactive
 
             _x = Utils.Size / 2;
             _y = Utils.Size / 2;
-            _state = State.Free;
+            _state = State.Normal;
 
 
 
@@ -33,6 +39,12 @@ namespace Reactive
             List<string> parameters;
             Utils.ParseMessage(message.Content, out action, out parameters);
 
+
+            if (action == "emergency")
+            {
+              //  Console.WriteLine("Emergency started!");
+                _state = State.Emergency;
+            }
             if (action == "block")
             {
                 // R1. If you detect an obstacle, then change direction
@@ -41,10 +53,24 @@ namespace Reactive
             }
             else if (action == "exit")
             {
+<<<<<<< Updated upstream
                 // R4. If you detect a door, then go out
                 //_state = State.Carrying;
                 //_resourceCarried = parameters[0];
                 Send("planet", Utils.Str("pick-up", _resourceCarried));
+=======
+                _state = State.Exiting;
+                _x = Convert.ToInt32(parameters[0]);
+                _y = Convert.ToInt32(parameters[1]);
+                Send("planet", Utils.Str("change", _x, _y));
+
+            }
+            else if (action == "exit")
+            {
+                // R4. If you detect a door, then go out
+                Send("planet", Utils.Str("out", _resourceCarried));
+                this.Stop();
+>>>>>>> Stashed changes
 
             }
             else if (action == "move")

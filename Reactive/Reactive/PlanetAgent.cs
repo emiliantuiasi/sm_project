@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Windows.Forms;
+using System.Timers;
+
 
 namespace Reactive
 {
@@ -11,19 +13,32 @@ namespace Reactive
     {
         private PlanetForm _formGui;
         public Dictionary<string, string> ExplorerPositions { get; set; }
+
+        public Dictionary<string, Utils.State> ExplorerStates{ get; set; }
         public Dictionary<string, string> ResourcePositions { get; set; }
-        public Dictionary<string, string> Loads { get; set; }
-        private string _basePosition;
+
+        private static System.Timers.Timer aTimer;
+
+        private bool isEmergency = false;
+        
 
         public PlanetAgent()
         {
             ExplorerPositions = new Dictionary<string, string>();
             ResourcePositions = new Dictionary<string, string>();
-            Loads = new Dictionary<string, string>();
-            _basePosition = Utils.Str(Utils.Size / 2, Utils.Size / 2);
+            ExplorerStates = new Dictionary<string, Utils.State>();
+
 
             Thread t = new Thread(new ThreadStart(GUIThread));
             t.Start();
+
+            //Will be used to trigger the emergency event at a random time
+            aTimer = new System.Timers.Timer(Utils.EmergencyTimeStart);
+            aTimer.Elapsed += OnTimedEvent;
+            aTimer.Enabled = true;
+            aTimer.AutoReset = false;
+            
+
         }
 
         private void GUIThread()
@@ -86,6 +101,9 @@ namespace Reactive
 
                 ResourcePositions.Add("res" + i, compPos);
                 resPos.Add(compPos);
+
+               
+
             }
         }
 
@@ -117,7 +135,9 @@ namespace Reactive
                 case "unload":
                     HandleUnload(message.Sender);
                     break;
-
+              /*  case "state-change":
+                    HandleStateChange(message.Sender, parameters);
+*/
                 default:
                     break;
             }
@@ -127,13 +147,18 @@ namespace Reactive
         private void HandlePosition(string sender, string position)
         {
             ExplorerPositions.Add(sender, position);
+            if (!ExplorerStates.ContainsKey(sender))
+            {
+                ExplorerStates.Add(sender, Utils.State.Normal);
+            }
             Send(sender, "move");
         }
 
         private void HandleChange(string sender, string position)
         {
-            ExplorerPositions[sender] = position;
+            //First check if the new position has a collision with a different agent
 
+            //TODO add here code for waiting/retry in case there is a collision on the exit cell.
             foreach (string k in ExplorerPositions.Keys)
             {
                 if (k == sender)
@@ -145,8 +170,13 @@ namespace Reactive
                 }
             }
 
-            foreach (string k in ResourcePositions.Keys)
+            //Update position if no collision was found
+            ExplorerPositions[sender] = position;
+
+            //Only if the emergency alarm was set off then we should exit or search for exits in proximity 
+            if (isEmergency)
             {
+<<<<<<< Updated upstream
                 string[] t = position.Split();
                 int x = Convert.ToInt32(t[0]);
                 int y = Convert.ToInt32(t[1]);
@@ -156,21 +186,60 @@ namespace Reactive
                 string compPos3 = Utils.Str(x + 1, y);
                 string compPos4 = Utils.Str(x - 1, y + 1);
 
+=======
+                foreach (string k in ResourcePositions.Keys)
+                {
+                    if (ResourcePositions[k] == position)
+                    {
+                        Send(sender, Utils.Str("exit", ResourcePositions[k]));
+                        return;
+                    }
+                }
 
-                if (ResourcePositions[k] == compPos1 || ResourcePositions[k] == compPos2 || ResourcePositions[k] == compPos3 || ResourcePositions[k] == compPos4)
+                string[] t = position.Split();
+                int x = Convert.ToInt32(t[0]);
+                int y = Convert.ToInt32(t[1]);
+
+                //Logic here will be modified to depend on Utils.FieldOfViewSize (?and maybe Direction (LEFT/RIGHT/UP/DOWN)
+               
+                //Note: If FieldOfView >1, then the number of positions to be checked increases
+
+                string compPos1 = Utils.Str(x, y + 1);
+                string compPos2 = Utils.Str(x, y - 1);
+                string compPos3 = Utils.Str(x + 1, y);
+                string compPos4 = Utils.Str(x - 1, y);
+>>>>>>> Stashed changes
+
+                foreach (string k in ResourcePositions.Keys)
                 {
 
+<<<<<<< Updated upstream
                     //Send(sender, "exit " + k);
                     ExplorerPositions.Remove(sender);
                     return;
-                }
-            }
+=======
+                    if (ResourcePositions[k] == compPos1 || ResourcePositions[k] == compPos2 || ResourcePositions[k] == compPos3 || ResourcePositions[k] == compPos4)
+                    {
+                        // update state of the explorer
+                        ExplorerStates[sender] = Utils.State.Exiting;
 
+                        Send(sender, Utils.Str("exit-found", ResourcePositions[k]));
+                        return;
+                    }
+>>>>>>> Stashed changes
+                }
+
+            }
+<<<<<<< Updated upstream
+
+=======
+>>>>>>> Stashed changes
             Send(sender, "move");
         }
 
         private void HandlePickUp(string sender, string position)
         {
+<<<<<<< Updated upstream
             Loads[sender] = position;
             Send(sender, "move");
         }
@@ -188,5 +257,33 @@ namespace Reactive
             Loads.Remove(sender);
             Send(sender, "move");
         }
+=======
+            ExplorerPositions.Remove(sender);
+          
+        }
+
+        private void HandleStateChange(string sender,string parameters)
+        {
+            //might be used later for changing state to Utils.State.Communicating 
+        }
+
+
+        private void OnTimedEvent(Object source, ElapsedEventArgs e)
+        {
+            isEmergency = true;
+
+            List<string> evacuationAgents = Environment.AllAgents().FindAll(agent => agent.StartsWith("evacuating"));
+            
+            //to avoid for the moment messages of state-change, state will be updated on planet before sending messages
+            foreach (string agent in evacuationAgents)
+            {
+                ExplorerStates[agent]= Utils.State.Emergency;
+            }
+            
+            SendToMany(evacuationAgents, "emergency");
+        }
+
+
+>>>>>>> Stashed changes
     }
 }
