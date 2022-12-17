@@ -15,7 +15,7 @@ namespace Reactive
             for (int i = 1; i <= Utils.NoExplorers; i++)
             {
                 var explorerAgent = new ExplorerAgent();
-                env.Add(explorerAgent, "explorer" + i);
+                env.Add(explorerAgent, "evacuating" + i);
             }
 
             Thread.Sleep(500);
