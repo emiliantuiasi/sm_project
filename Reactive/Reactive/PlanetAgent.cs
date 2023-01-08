@@ -127,9 +127,10 @@ namespace Reactive
                 case "out":
                     HandleOut(message.Sender, parameters);
                     break;
-              /*  case "state-change":
+                case "state-change":
                     HandleStateChange(message.Sender, parameters);
-*/
+                    break;
+
                 default:
                     break;
             }
@@ -203,6 +204,26 @@ namespace Reactive
                     }
                 }
 
+
+                //if we find no exit in the proximity, search for other agents in this proximity
+
+                //Logic here will be modified to depend on Utils.FieldOfViewSize, similar to search of resource
+                List<string> explorersInProximity = new List<string>();
+                foreach (string k in ExplorerPositions.Keys)
+                {
+                    if (ExplorerPositions[k] == compPos1 || ExplorerPositions[k] == compPos2 || ExplorerPositions[k] == compPos3 || ExplorerPositions[k] == compPos4)
+                    {
+                        explorersInProximity.Add(k);
+                    }
+                }
+                if(explorersInProximity.Count > 0)
+                {
+                    ExplorerStates[sender] = Utils.State.Communicating;
+                    Send(sender, Utils.Str("explorers-found", string.Join(",",explorersInProximity)));
+                    return;
+                }
+                
+
             }
             Send(sender, "move");
         }
@@ -215,7 +236,27 @@ namespace Reactive
 
         private void HandleStateChange(string sender,string parameters)
         {
-            //might be used later for changing state to Utils.State.Communicating 
+            //might be used later for changing state to Utils.State.Communicating
+            int stateId = Convert.ToInt32(parameters);
+            switch (stateId)
+            {
+                case 0:
+                    ExplorerStates[sender] = Utils.State.Normal;
+                    break;
+                case 1:
+                    ExplorerStates[sender] = Utils.State.Emergency;
+                    break;
+                case 2:
+                    ExplorerStates[sender] = Utils.State.Exiting;
+                    break;
+                case 3:
+                    ExplorerStates[sender] = Utils.State.Communicating;
+                    break;
+                default:
+                    ExplorerStates[sender] = Utils.State.Following;
+                    break;
+
+            }
         }
 
 
