@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms.VisualStyles;
+using static Reactive.Utils;
 
 namespace Reactive
 {
@@ -11,16 +12,13 @@ namespace Reactive
         private State _state;
         private string _resourceCarried;
 
-        private enum State { Free, Carrying };
-
         public override void Setup()
         {
             Console.WriteLine("Starting " + Name);
 
             _x = Utils.Size / 2;
             _y = Utils.Size / 2;
-            _state = State.Free;
-
+            _state = State.Normal;
 
 
             Send("planet", Utils.Str("position", _x, _y));
@@ -34,6 +32,11 @@ namespace Reactive
             List<string> parameters;
             Utils.ParseMessage(message.Content, out action, out parameters);
 
+
+            if (action == "emergency")
+            {
+                _state = State.Emergency;
+            }
             if (action == "block")
             {
                 // R1. If you detect an obstacle, then change direction
@@ -42,9 +45,7 @@ namespace Reactive
             }
             else if (action == "exit-found")
             {
-                // R4. If you detect a door, then go out
-                //_state = State.Carrying;
-                //_resourceCarried = parameters[0];
+                _state = State.Exiting;
                 _x = Convert.ToInt32(parameters[0]);
                 _y = Convert.ToInt32(parameters[1]);
                 Send("planet", Utils.Str("change", _x, _y));
@@ -52,9 +53,7 @@ namespace Reactive
             }
             else if (action == "exit")
             {
-                // R4. If you detect a door, then go out
-                Send("planet", Utils.Str("out", _resourceCarried)); 
-
+                Send("planet", Utils.Str("out", _resourceCarried));
                 this.Stop();
 
             }

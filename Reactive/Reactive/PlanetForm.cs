@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Windows.Forms;
 
+
 namespace Reactive
 {
     public partial class PlanetForm : Form
@@ -73,13 +74,14 @@ namespace Reactive
 
             if (_ownerAgent != null)
             {
-                foreach (string v in _ownerAgent.ExplorerPositions.Values)
+                foreach (string k in _ownerAgent.ExplorerPositions.Keys)
                 {
+                    string v = _ownerAgent.ExplorerPositions[k];
                     string[] t = v.Split();
                     int x = Convert.ToInt32(t[0]);
                     int y = Convert.ToInt32(t[1]);
-
-                    g.FillEllipse(Brushes.Blue, 20 + x * cellSize + 6, 20 + y * cellSize + 6, cellSize - 12, cellSize - 12);
+                    
+                    g.FillEllipse(Utils.stateColors[_ownerAgent.ExplorerStates[k]], 20 + x * cellSize + 6, 20 + y * cellSize + 6, cellSize - 12, cellSize - 12);
                 }
 
                 foreach (string v in _ownerAgent.ResourcePositions.Values)
