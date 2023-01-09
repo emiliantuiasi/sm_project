@@ -10,6 +10,7 @@ namespace Reactive
     public class ExplorerAgent : Agent
     {
         private int _x, _y;
+        private int _last_move = -1;
         private State _state;
         private string _resourceCarried;
         private Dictionary<string, string> exploreresInProximitySeeingExit;
@@ -122,13 +123,141 @@ namespace Reactive
         private void MoveRandomly()
         {
             int d = Utils.RandNoGen.Next(4);
-            switch (d)
+            if (_state == State.Normal)
             {
-                case 0: if (_x > 1) _x--; break;
-                case 1: if (_x < Utils.Size - 2) _x++; break;
-                case 2: if (_y > 1) _y--; break;
-                case 3: if (_y < Utils.Size - 2) _y++; break;
+                _last_move = d;
+                switch (d)
+                {
+                    case 0: if (_x > 1) _x--; break;
+                    case 1: if (_x < Utils.Size - 2) _x++; break;
+                    case 2: if (_y > 1) _y--; break;
+                    case 3: if (_y < Utils.Size - 2) _y++; break;
+                }
             }
+            else if (_state == State.Emergency)
+            {
+                if (_last_move != -1)
+                {
+                    switch (_last_move)
+                    {
+                        case 0:
+                            if (_x > 1) _x--;
+                            if (_x == 1) _last_move = Utils.RandNoGen.Next(1, 2);
+                            break;
+                        case 1:
+                            if (_x < Utils.Size - 2) _x++;
+                            if (_x == Utils.Size - 2) _last_move = Utils.RandNoGen.Next(2, 3);
+                            break;
+                        case 2:
+                            if (_y > 1) _y--;
+                            if (_y == 1) _last_move = Utils.RandNoGen.Next(3, 4);
+                            if (_last_move == 4) _last_move = 0;
+                            break;
+                        case 3:
+                            if (_y < Utils.Size - 2) _y++;
+                            if (_y == Utils.Size - 2) _last_move = Utils.RandNoGen.Next(0, 1);
+                            break;
+                    }
+                }
+                else
+                {
+                    _last_move = Utils.RandNoGen.Next(4);
+                }
+
+
+            }
+
+        }
+        private void findClosestExplorer(out string minKey, out int minX, out int minY)
+        {
+            minKey = null;
+            minX = 0;
+            minY = 0;
+            foreach (string k in exploreresInProximitySeeingExit.Keys)
+            {
+                string[] positionParts = exploreresInProximitySeeingExit[k].Split();
+                int explorerX = Convert.ToInt32(positionParts[0]);
+                int explorerY = Convert.ToInt32(positionParts[1]);
+                if (minKey == null)
+                {
+                    minX = explorerX;
+                    minY = explorerY;
+                    minKey = k;
+                }
+                else
+                {
+                    int dist = ComputeDistanceInMoves(explorerX, explorerY);
+                    int minDist = ComputeDistanceInMoves(minX, minY);
+                    if (dist < minDist)
+                    {
+                        minX = explorerX;
+                        minY = explorerY;
+                        minKey = k;
+                    }
+
+                }
+            }
+        }
+        private int ComputeDistanceInMoves(int desiredX, int desiredY)
+        {
+            return Math.Abs(desiredX - _x) + Math.Abs(desiredY - _y);
+        }
+        private void ComputeNextPositionWhenMovingTo(int desiredX, int desiredY)
+        {
+            //this method could be useful to act on move-to exit and move-to after an explorer
+            int dx= desiredX - _x;
+            int dy= desiredY - _y;
+            if (Math.Abs(dx) > Math.Abs(dy))
+            {
+                //choose to move up/down  
+                _y+= Math.Sign(dy);
+            }
+            else
+            {
+                //move left/right
+                _x+=Math.Sign(dx);
+
+            /*    if(dx>0)
+                {
+                    //move to right
+                }
+                else
+                {
+                    //move to left
+
+                }*/
+            }
+        }
+
+        private void OnTimedEvent(Object source, ElapsedEventArgs e)
+        {
+            if (exploreresInProximitySeeingExit.Count == 0)
+            {
+                _state = Utils.State.Emergency;
+                Send("planet", Utils.Str("state-change", (int)(Utils.State.Emergency)));
+                MoveRandomly();
+                Send("planet", Utils.Str("change", _x, _y));
+            }
+            else
+            {
+                //it time is up, but we received at least one response act on it/them
+                int minX = 0, minY = 0;
+                string minKey = null;
+                findClosestExplorer(out minKey, out minX, out minY);
+
+                ComputeNextPositionWhenMovingTo(minX, minY);
+
+                _state = State.Emergency;
+
+                //send smth to planet
+                exploreresInProximitySeeingExit.Clear();
+                awaitingCommunicationResponses = 0;
+                //send smth to planet
+                Send("planet", Utils.Str("state-change", (int)(Utils.State.Following)));
+                Send("planet", Utils.Str("change", _x, _y));
+
+            }
+
         }
 
         private void findClosestExplorer(out string minKey, out int minX, out int minY)
