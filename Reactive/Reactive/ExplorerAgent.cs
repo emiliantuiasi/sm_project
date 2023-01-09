@@ -106,7 +106,7 @@ namespace Reactive
 
                     //send smth to planet
                     Send("planet", Utils.Str("state-change", (int)(Utils.State.Following)));
-
+                    Send("planet", Utils.Str("change", _x, _y));
 
                 }
                 return;
@@ -205,6 +205,28 @@ namespace Reactive
         private void ComputeNextPositionWhenMovingTo(int desiredX, int desiredY)
         {
             //this method could be useful to act on move-to exit and move-to after an explorer
+            int dx= desiredX - _x;
+            int dy= desiredY - _y;
+            if (Math.Abs(dx) > Math.Abs(dy))
+            {
+                //choose to move up/down  
+                _y+= Math.Sign(dy);
+            }
+            else
+            {
+                //move left/right
+                _x+=Math.Sign(dx);
+
+            /*    if(dx>0)
+                {
+                    //move to right
+                }
+                else
+                {
+                    //move to left
+
+                }*/
+            }
         }
 
         private void OnTimedEvent(Object source, ElapsedEventArgs e)
@@ -230,6 +252,9 @@ namespace Reactive
                 //send smth to planet
                 exploreresInProximitySeeingExit.Clear();
                 awaitingCommunicationResponses = 0;
+                //send smth to planet
+                Send("planet", Utils.Str("state-change", (int)(Utils.State.Following)));
+                Send("planet", Utils.Str("change", _x, _y));
 
             }
 
