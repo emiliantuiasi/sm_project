@@ -56,3 +56,11 @@ C:\Users\atome\Documents\SM_Project\sm_project\Reactive\Reactive\obj\Debug\React
 C:\Users\atome\Documents\SM_Project\sm_project\Reactive\Reactive\obj\Debug\Reactive.csproj.CopyComplete
 C:\Users\atome\Documents\SM_Project\sm_project\Reactive\Reactive\obj\Debug\Reactive.exe
 C:\Users\atome\Documents\SM_Project\sm_project\Reactive\Reactive\obj\Debug\Reactive.pdb
+C:\Users\simio\Downloads\proiecte\sm\sm_project\Reactive\Reactive\bin\Debug\Reactive.exe.config
+C:\Users\simio\Downloads\proiecte\sm\sm_project\Reactive\Reactive\obj\Debug\Reactive.exe
+C:\Users\simio\Downloads\proiecte\sm\sm_project\Reactive\Reactive\obj\Debug\Reactive.pdb
+C:\Users\simio\Downloads\proiecte\sm\sm_project\Reactive\Reactive\bin\Debug\Reactive.exe
+C:\Users\simio\Downloads\proiecte\sm\sm_project\Reactive\Reactive\bin\Debug\Reactive.pdb
+C:\Users\simio\Downloads\proiecte\sm\sm_project\Reactive\Reactive\obj\Debug\Reactive.csprojResolveAssemblyReference.cache
+C:\Users\simio\Downloads\proiecte\sm\sm_project\Reactive\Reactive\obj\Debug\Reactive.PlanetForm.resources
+C:\Users\simio\Downloads\proiecte\sm\sm_project\Reactive\Reactive\obj\Debug\Reactive.csproj.GenerateResource.Cache

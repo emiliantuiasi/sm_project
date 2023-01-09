@@ -9,6 +9,7 @@ namespace Reactive
     public class ExplorerAgent : Agent
     {
         private int _x, _y;
+        private int _last_move = -1;
         private State _state;
         private string _resourceCarried;
 
@@ -68,14 +69,50 @@ namespace Reactive
         private void MoveRandomly()
         {
             int d = Utils.RandNoGen.Next(4);
-            switch (d)
+            if (_state == State.Normal)
             {
-                case 0: if (_x > 1) _x--; break;
-                case 1: if (_x < Utils.Size - 2) _x++; break;
-                case 2: if (_y > 1) _y--; break;
-                case 3: if (_y < Utils.Size - 2) _y++; break;
+                _last_move = d;
+                switch (d)
+                {
+                    case 0: if (_x > 1) _x--; break;
+                    case 1: if (_x < Utils.Size - 2) _x++; break;
+                    case 2: if (_y > 1) _y--; break;
+                    case 3: if (_y < Utils.Size - 2) _y++; break;
+                }
             }
-        }
+            else if (_state == State.Emergency)
+            {
+                if (_last_move != -1)
+                {
+                    switch (_last_move)
+                    {
+                        case 0:
+                            if (_x > 1) _x--;
+                            if (_x == 1) _last_move = Utils.RandNoGen.Next(1, 2);
+                            break;
+                        case 1:
+                            if (_x < Utils.Size - 2) _x++;
+                            if (_x == Utils.Size - 2) _last_move = Utils.RandNoGen.Next(2, 3);
+                            break;
+                        case 2:
+                            if (_y > 1) _y--;
+                            if (_y == 1) _last_move = Utils.RandNoGen.Next(3, 4);
+                            if (_last_move == 4) _last_move = 0;
+                            break;
+                        case 3:
+                            if (_y < Utils.Size - 2) _y++;
+                            if (_y == Utils.Size - 2) _last_move = Utils.RandNoGen.Next(0, 1);
+                            break;
+                    }
+                }
+                else
+                {
+                    _last_move = Utils.RandNoGen.Next(4);
+                }
 
+
+            }
+
+        }
     }
 }
