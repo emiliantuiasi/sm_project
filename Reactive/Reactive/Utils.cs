@@ -7,14 +7,14 @@ namespace Reactive
     public class Utils
     {
         public static int Size = 16;
-        public static int FieldOfViewSize = 1;
+        public static int FieldOfViewSize = 2;
         public static int NoExplorers = 6;
         public static int NoResources = 3;
 
         public static int Delay = 200;
         public static Random RandNoGen = new Random();
         public static int EmergencyTimeStart = RandNoGen.Next(6000)+6000;
-        public static int CommunicationTimeWait = RandNoGen.Next(2000) + 1000;
+        public static int CommunicationTimeWait = 1500;
         public enum State { Normal, Emergency, Exiting, Communicating, Following };
         public static Dictionary<State, Brush> stateColors= new Dictionary<State, Brush>()
         {
