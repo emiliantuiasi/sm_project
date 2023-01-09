@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Timers;
-using System.Windows.Forms.VisualStyles;
 using static Reactive.Utils;
 
 namespace Reactive
@@ -15,6 +14,8 @@ namespace Reactive
         private string _resourceCarried;
         private Dictionary<string, string> exploreresInProximitySeeingExit;
         private int awaitingCommunicationResponses = 0;
+        private int exitX=-1, exitY=-1;
+        private Dictionary<string, long> neigbourLastComm = new Dictionary<string, long>();
 
 
         private static System.Timers.Timer aTimer;
@@ -60,8 +61,20 @@ namespace Reactive
             else if (action == "exit-found")
             {
                 _state = State.Exiting;
-                _x = Convert.ToInt32(parameters[0]);
-                _y = Convert.ToInt32(parameters[1]);
+                int desiredX, desiredY;
+                if(exitX!=-1 && exitY != -1)
+                {
+                    desiredX = exitX;
+                    desiredY = exitY;
+                }
+                else
+                {
+                    desiredX = Convert.ToInt32(parameters[0]);
+                    desiredY = Convert.ToInt32(parameters[1]);
+                    exitX = desiredX;
+                    exitY = desiredY;
+                }
+                ComputeNextPositionWhenMovingTo(desiredX, desiredY);
                 Send("planet", Utils.Str("change", _x, _y));
 
             }
@@ -74,15 +87,60 @@ namespace Reactive
             else if (action == "explorers-found")
             {
                 List<string> explorersInProximity = new List<string>(parameters[0].Split(','));
-                SendToMany(explorersInProximity, "question");
-                _state = State.Communicating;
-                awaitingCommunicationResponses = explorersInProximity.Count;
 
-                //Will be used to trigger the emergency event at a random time
-                aTimer = new System.Timers.Timer(Utils.CommunicationTimeWait);
-                aTimer.Elapsed += OnTimedEvent;
-                aTimer.Enabled = true;
-                aTimer.AutoReset = false;
+
+                List<string> explorersInProximityNoCoolDown = new List<string>();
+                if (neigbourLastComm.Keys.Count > 0)
+                {
+                    foreach (string neigbour in neigbourLastComm.Keys)
+                    {
+                        if (explorersInProximity.Contains(neigbour))
+                        {
+                            long milliseconds = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+                            if ((neigbourLastComm[neigbour] + Utils.CoolDown) <= milliseconds)
+                            {
+                                explorersInProximityNoCoolDown.Add(neigbour);
+                            }
+                        }
+                        else
+                        {
+                            explorersInProximityNoCoolDown.Add(neigbour);
+                        }
+                    }
+                }
+                else
+                {
+                    explorersInProximityNoCoolDown.AddRange(explorersInProximity);
+                }
+                
+                for (int i=0; i< explorersInProximityNoCoolDown.Count; ++i)
+                {
+                    long milliseconds = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+                    neigbourLastComm[explorersInProximityNoCoolDown[i]] = milliseconds;
+                }
+
+
+                if (explorersInProximityNoCoolDown.Count > 0)
+                {
+                    Send("planet", Utils.Str("state-change", (int)(Utils.State.Communicating)));
+
+                    SendToMany(explorersInProximityNoCoolDown, "question");
+
+                    _state = State.Communicating;
+                   
+                    awaitingCommunicationResponses = explorersInProximityNoCoolDown.Count;
+
+                    //Will be used to trigger the emergency event at a random time
+                    aTimer = new System.Timers.Timer(Utils.CommunicationTimeWait);
+                    aTimer.Elapsed += OnTimedEvent;
+                    aTimer.Enabled = true;
+                    aTimer.AutoReset = false;
+                }
+                else
+                {
+                    MoveRandomly();
+                    Send("planet", Utils.Str("change", _x, _y));
+                }
 
             }
             else if (action == "follow-me")
@@ -205,28 +263,25 @@ namespace Reactive
         private void ComputeNextPositionWhenMovingTo(int desiredX, int desiredY)
         {
             //this method could be useful to act on move-to exit and move-to after an explorer
-            int dx= desiredX - _x;
-            int dy= desiredY - _y;
-            if (Math.Abs(dx) > Math.Abs(dy))
+            int dx = _x - desiredX;
+            int dy =  _y - desiredY;
+            if (Math.Abs(dx) > Math.Abs(dy) || (IsMargin(_x, _y + Math.Sign(dy)) && !(_x == desiredX && ((_y + Math.Sign(dy)) == desiredY))))
             {
-                //choose to move up/down  
-                _y+= Math.Sign(dy);
+                //move left/right
+                _x -= Math.Sign(dx);
             }
             else
             {
-                //move left/right
-                _x+=Math.Sign(dx);
+                //choose to move up/down  
+                _y -= Math.Sign(dy);
 
-            /*    if(dx>0)
-                {
-                    //move to right
-                }
-                else
-                {
-                    //move to left
-
-                }*/
             }
+        }
+        private bool IsMargin(int x, int y)
+        {
+            if (x == 0 || x == (Utils.Size-1) || y == 0 || y == (Utils.Size-1))
+                return true;
+            return false;
         }
 
         private void OnTimedEvent(Object source, ElapsedEventArgs e)
@@ -260,97 +315,7 @@ namespace Reactive
 
         }
 
-        private void findClosestExplorer(out string minKey, out int minX, out int minY)
-        {
-            minKey= null;
-            minX= 0;
-            minY= 0;
-            foreach (string k in exploreresInProximitySeeingExit.Keys)
-            {
-                string[] positionParts = exploreresInProximitySeeingExit[k].Split();
-                int explorerX = Convert.ToInt32(positionParts[0]);
-                int explorerY = Convert.ToInt32(positionParts[1]);
-                if (minKey == null)
-                {
-                    minX = explorerX;
-                    minY = explorerY;
-                    minKey = k;
-                }
-                else
-                {
-                    int dist = ComputeDistanceInMoves(explorerX, explorerY);
-                    int minDist = ComputeDistanceInMoves(minX, minY);
-                    if (dist < minDist)
-                    {
-                        minX = explorerX;
-                        minY = explorerY;
-                        minKey = k;
-                    }
-
-                }
-            }
-        }
-        private int ComputeDistanceInMoves(int desiredX, int desiredY)
-        {
-            return Math.Abs(desiredX - _x) + Math.Abs(desiredY - _y);
-        }
-        private void ComputeNextPositionWhenMovingTo(int desiredX, int desiredY)
-        {
-            //this method could be useful to act on move-to exit and move-to after an explorer
-            int dx= desiredX - _x;
-            int dy= desiredY - _y;
-            if (Math.Abs(dx) > Math.Abs(dy))
-            {
-                //choose to move up/down  
-                _y+= Math.Sign(dy);
-            }
-            else
-            {
-                //move left/right
-                _x+=Math.Sign(dx);
-
-            /*    if(dx>0)
-                {
-                    //move to right
-                }
-                else
-                {
-                    //move to left
-
-                }*/
-            }
-        }
-
-        private void OnTimedEvent(Object source, ElapsedEventArgs e)
-        {
-            if(exploreresInProximitySeeingExit.Count == 0)
-            {
-                _state = Utils.State.Emergency;
-                Send("planet", Utils.Str("state-change", (int)(Utils.State.Emergency)));
-                MoveRandomly();
-                Send("planet", Utils.Str("change", _x, _y));
-            }
-            else
-            {
-                //it time is up, but we received at least one response act on it/them
-                int minX = 0, minY = 0;
-                string minKey = null;
-                findClosestExplorer(out minKey, out minX, out minY);
-
-                ComputeNextPositionWhenMovingTo(minX, minY);
-
-                _state = State.Emergency;
-
-                //send smth to planet
-                exploreresInProximitySeeingExit.Clear();
-                awaitingCommunicationResponses = 0;
-                //send smth to planet
-                Send("planet", Utils.Str("state-change", (int)(Utils.State.Following)));
-                Send("planet", Utils.Str("change", _x, _y));
-
-            }
-           
-        }
+    
 
     }
 }

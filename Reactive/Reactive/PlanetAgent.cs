@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Windows.Forms;
 using System.Timers;
-
+using System.Globalization;
 
 namespace Reactive
 {
@@ -185,16 +185,32 @@ namespace Reactive
                 //Logic here will be modified to depend on Utils.FieldOfViewSize (?and maybe Direction (LEFT/RIGHT/UP/DOWN)
                
                 //Note: If FieldOfView >1, then the number of positions to be checked increases
+                List<string> adjacentPoistions = new List<string>();
+                //check validity of adjacentPositions
+                for( int i = -Utils.FieldOfViewSize; i <=Utils.FieldOfViewSize; i++)
+                {
+                    for(int j= -Utils.FieldOfViewSize; j <= Utils.FieldOfViewSize; ++j)
+                    {
+                        //if position is diff from the current one
+                        if(i!=0 && j != 0)
+                        {
+                            //check if we don't exceed borders
+                            if(x+i>=0 && (x+i<=Utils.Size-1) && (y+j >= 0) && (y + j <= Utils.Size - 1))
+                            {
+                                adjacentPoistions.Add(Utils.Str(x+i, y));
+                                adjacentPoistions.Add(Utils.Str(x, y + j));
+                            }
+                               
+                        }
+                           
+                    }
 
-                string compPos1 = Utils.Str(x, y + 1);
-                string compPos2 = Utils.Str(x, y - 1);
-                string compPos3 = Utils.Str(x + 1, y);
-                string compPos4 = Utils.Str(x - 1, y);
+                }
 
                 foreach (string k in ResourcePositions.Keys)
                 {
 
-                    if (ResourcePositions[k] == compPos1 || ResourcePositions[k] == compPos2 || ResourcePositions[k] == compPos3 || ResourcePositions[k] == compPos4)
+                    if (adjacentPoistions.Contains(ResourcePositions[k]))
                     {
                         // update state of the explorer
                         ExplorerStates[sender] = Utils.State.Exiting;
@@ -211,14 +227,14 @@ namespace Reactive
                 List<string> explorersInProximity = new List<string>();
                 foreach (string k in ExplorerPositions.Keys)
                 {
-                    if (ExplorerPositions[k] == compPos1 || ExplorerPositions[k] == compPos2 || ExplorerPositions[k] == compPos3 || ExplorerPositions[k] == compPos4)
+                    if (adjacentPoistions.Contains(ExplorerPositions[k]))
                     {
                         explorersInProximity.Add(k);
                     }
                 }
                 if(explorersInProximity.Count > 0)
                 {
-                    ExplorerStates[sender] = Utils.State.Communicating;
+                    //ExplorerStates[sender] = Utils.State.Communicating;
                     Send(sender, Utils.Str("explorers-found", string.Join(",",explorersInProximity)));
                     return;
                 }
