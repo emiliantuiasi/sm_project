@@ -1,6 +1,7 @@
 ﻿using ActressMas;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Timers;
 using static Reactive.Utils;
 
@@ -15,6 +16,8 @@ namespace Reactive
         private Dictionary<string, string> exploreresInProximitySeeingExit;
         private int awaitingCommunicationResponses = 0;
         private int exitX=-1, exitY=-1;
+        private int maxRetries = 3;
+        private int retries = 0;
         private Dictionary<string, long> neigbourLastComm = new Dictionary<string, long>();
 
 
@@ -47,35 +50,65 @@ namespace Reactive
             }
             if (action == "block")
             {
-                // R1. If you detect an obstacle, then change direction
-                MoveRandomly();
-                Send("planet", Utils.Str("change", _x, _y));
+                // R1. If you detect an obstacle, then change direction if you are no exiting
+                //if exiting or following try again
+                if (retries<maxRetries && (_state == State.Following || _state == State.Exiting))
+                {
+                    retries++;
+                    
+
+                    Send("planet", Utils.Str("change", _x, _y));
+                   
+                }
+                else
+                {
+                    if (retries == maxRetries)
+                    {
+                        retries = 0;
+                        _state = State.Emergency;
+                        Send("planet", Utils.Str("state-change", (int)(Utils.State.Emergency)));
+                    }
+                   
+                    MoveRandomly();
+                    Send("planet", Utils.Str("change", _x, _y));
+                }
             }
             if (action == "question")
             {
                 if (_state == State.Exiting)
                 {
-                    Send(message.Sender, Utils.Str("follow-me", _x, _y));
+                    Send(message.Sender, Utils.Str("follow-me", exitX, exitY));
                 }
+                return;
             }
             else if (action == "exit-found")
             {
+                Utils.State previousState = _state;
                 _state = State.Exiting;
-                int desiredX, desiredY;
-                if(exitX!=-1 && exitY != -1)
+
+                
+
+                /*if((exitX!=-1 && exitY != -1)&& previousState==Utils.State.Following)
                 {
-                    desiredX = exitX;
-                    desiredY = exitY;
-                }
-                else
+                   //
+                }*/
+                int desiredX = Convert.ToInt32(parameters[0]);
+                int desiredY = Convert.ToInt32(parameters[1]);
+
+                if (
+                    (exitX == -1 && exitY == -1 ) //starea cand nu sunt in following si vad o iesire
+                    || ((exitX != desiredX || exitY != desiredY) && previousState == Utils.State.Following))
                 {
-                    desiredX = Convert.ToInt32(parameters[0]);
-                    desiredY = Convert.ToInt32(parameters[1]);
                     exitX = desiredX;
                     exitY = desiredY;
                 }
-                ComputeNextPositionWhenMovingTo(desiredX, desiredY);
+
+
+                ComputeNextPositionWhenMovingTo(exitX, exitY);
+                
+                Send("planet", Utils.Str("state-change", (int)(Utils.State.Exiting)));
                 Send("planet", Utils.Str("change", _x, _y));
+                return;
 
             }
             else if (action == "exit")
@@ -84,6 +117,19 @@ namespace Reactive
                 this.Stop();
 
             }
+            else if (action == "continue-exit")
+            {
+                ComputeNextPositionWhenMovingTo(exitX, exitY);
+                Send("planet", Utils.Str("change", _x, _y));
+                return;
+            }
+            else if (action == "continue-follow")
+            {
+                ComputeNextPositionWhenMovingTo(exitX, exitY);
+                Send("planet", Utils.Str("change", _x, _y));
+                return;
+            }
+
             else if (action == "explorers-found")
             {
                 List<string> explorersInProximity = new List<string>(parameters[0].Split(','));
@@ -92,9 +138,9 @@ namespace Reactive
                 List<string> explorersInProximityNoCoolDown = new List<string>();
                 if (neigbourLastComm.Keys.Count > 0)
                 {
-                    foreach (string neigbour in neigbourLastComm.Keys)
+                    foreach (string neigbour in explorersInProximity)
                     {
-                        if (explorersInProximity.Contains(neigbour))
+                        if (neigbourLastComm.Keys.Contains(neigbour))
                         {
                             long milliseconds = DateTimeOffset.Now.ToUnixTimeMilliseconds();
                             if ((neigbourLastComm[neigbour] + Utils.CoolDown) <= milliseconds)
@@ -145,6 +191,7 @@ namespace Reactive
             }
             else if (action == "follow-me")
             {
+                
                 exploreresInProximitySeeingExit.Add(message.Sender, Utils.Str(parameters[0], parameters[1]));
 
                 //if we received all the responses from all the explorers in proximity
@@ -157,6 +204,8 @@ namespace Reactive
                     findClosestExplorer(out minKey, out minX, out minY);
 
                     ComputeNextPositionWhenMovingTo(minX, minY);
+                    exitX = minX;
+                    exitY = minY;
 
                     _state = State.Following;
                     exploreresInProximitySeeingExit.Clear();
@@ -165,9 +214,9 @@ namespace Reactive
                     //send smth to planet
                     Send("planet", Utils.Str("state-change", (int)(Utils.State.Following)));
                     Send("planet", Utils.Str("change", _x, _y));
+                    return;
 
                 }
-                return;
 
             }
             else if (action == "move")
@@ -265,16 +314,24 @@ namespace Reactive
             //this method could be useful to act on move-to exit and move-to after an explorer
             int dx = _x - desiredX;
             int dy =  _y - desiredY;
-            if (Math.Abs(dx) > Math.Abs(dy) || (IsMargin(_x, _y + Math.Sign(dy)) && !(_x == desiredX && ((_y + Math.Sign(dy)) == desiredY))))
+            if(desiredX==0 || (desiredX == Utils.Size - 1))
             {
-                //move left/right
-                _x -= Math.Sign(dx);
+                if(Math.Abs(dy) > 0)
+                    _y -= Math.Sign(dy);
+                else
+                {
+                    _x -= Math.Sign(dx);
+                }
             }
             else
             {
-                //choose to move up/down  
-                _y -= Math.Sign(dy);
-
+                if (Math.Abs(dx) > 0)
+                    _x -= Math.Sign(dx);
+                
+                else
+                {
+                    _y -= Math.Sign(dy);
+                }
             }
         }
         private bool IsMargin(int x, int y)
@@ -286,7 +343,7 @@ namespace Reactive
 
         private void OnTimedEvent(Object source, ElapsedEventArgs e)
         {
-            if (exploreresInProximitySeeingExit.Count == 0)
+            if (exploreresInProximitySeeingExit.Count == 0 && _state != Utils.State.Following && _state != Utils.State.Exiting)
             {
                 _state = Utils.State.Emergency;
                 Send("planet", Utils.Str("state-change", (int)(Utils.State.Emergency)));
@@ -301,14 +358,16 @@ namespace Reactive
                 findClosestExplorer(out minKey, out minX, out minY);
 
                 ComputeNextPositionWhenMovingTo(minX, minY);
+                exitX = minX;
+                exitY = minY;
 
-                _state = State.Emergency;
+                _state = State.Following;
+                Send("planet", Utils.Str("state-change", (int)(Utils.State.Following)));
 
-                //send smth to planet
                 exploreresInProximitySeeingExit.Clear();
                 awaitingCommunicationResponses = 0;
                 //send smth to planet
-                Send("planet", Utils.Str("state-change", (int)(Utils.State.Following)));
+               
                 Send("planet", Utils.Str("change", _x, _y));
 
             }

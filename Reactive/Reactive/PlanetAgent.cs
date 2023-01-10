@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Windows.Forms;
 using System.Timers;
-using System.Globalization;
 
 namespace Reactive
 {
@@ -182,8 +181,12 @@ namespace Reactive
                 int x = Convert.ToInt32(t[0]);
                 int y = Convert.ToInt32(t[1]);
 
-                //Logic here will be modified to depend on Utils.FieldOfViewSize (?and maybe Direction (LEFT/RIGHT/UP/DOWN)
-               
+                if (ExplorerStates[sender] == Utils.State.Exiting)
+                {
+                    Send(sender, "continue-exit");
+                    return;
+                }
+
                 //Note: If FieldOfView >1, then the number of positions to be checked increases
                 List<string> adjacentPoistions = new List<string>();
                 //check validity of adjacentPositions
@@ -197,8 +200,9 @@ namespace Reactive
                             //check if we don't exceed borders
                             if(x+i>=0 && (x+i<=Utils.Size-1) && (y+j >= 0) && (y + j <= Utils.Size - 1))
                             {
-                                adjacentPoistions.Add(Utils.Str(x+i, y));
-                                adjacentPoistions.Add(Utils.Str(x, y + j));
+                                adjacentPoistions.Add(Utils.Str(x+i, y+j));
+                             //   adjacentPoistions.Add(Utils.Str(x, y + j));
+                               // adjacentPoistions.Add(Utils.Str(x+i, y));
                             }
                                
                         }
@@ -213,17 +217,20 @@ namespace Reactive
                     if (adjacentPoistions.Contains(ResourcePositions[k]))
                     {
                         // update state of the explorer
-                        ExplorerStates[sender] = Utils.State.Exiting;
+                       // ExplorerStates[sender] = Utils.State.Exiting;
 
                         Send(sender, Utils.Str("exit-found", ResourcePositions[k]));
                         return;
                     }
                 }
 
-
+                if (ExplorerStates[sender] == Utils.State.Following)
+                {
+                    Send(sender, "continue-following");
+                    return;
+                }
                 //if we find no exit in the proximity, search for other agents in this proximity
 
-                //Logic here will be modified to depend on Utils.FieldOfViewSize, similar to search of resource
                 List<string> explorersInProximity = new List<string>();
                 foreach (string k in ExplorerPositions.Keys)
                 {
@@ -234,7 +241,6 @@ namespace Reactive
                 }
                 if(explorersInProximity.Count > 0)
                 {
-                    //ExplorerStates[sender] = Utils.State.Communicating;
                     Send(sender, Utils.Str("explorers-found", string.Join(",",explorersInProximity)));
                     return;
                 }
@@ -242,6 +248,8 @@ namespace Reactive
 
             }
             Send(sender, "move");
+
+            
         }
 
         private void HandleOut(string sender, string position)
