@@ -12,9 +12,6 @@ namespace Reactive
         public static int NoResources = 5;
         public static long CoolDown = 3000;
 
-
-        // cand un agent ajunge la margine si trebuie sa schimbe directia, nu se mai verifica daca avea in fata iesire? 
-
         public static int Delay = 200;
         public static Random RandNoGen = new Random();
         public static int EmergencyTimeStart = RandNoGen.Next(6000)+2000;
