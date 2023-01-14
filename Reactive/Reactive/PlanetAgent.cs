@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Windows.Forms;
 using System.Timers;
+using System.Linq;
 
 namespace Reactive
 {
@@ -168,6 +169,7 @@ namespace Reactive
             //Only if the emergency alarm was set off then we should exit or search for exits in proximity 
             if (isEmergency)
             {
+                //if agent is positioned on exit
                 foreach (string k in ResourcePositions.Keys)
                 {
                     if (ResourcePositions[k] == position)
@@ -195,14 +197,12 @@ namespace Reactive
                     for(int j= -Utils.FieldOfViewSize; j <= Utils.FieldOfViewSize; ++j)
                     {
                         //if position is diff from the current one
-                        if(i!=0 && j != 0)
+                        if(i!=0 || j != 0)
                         {
                             //check if we don't exceed borders
-                            if(x+i>=0 && (x+i<=Utils.Size-1) && (y+j >= 0) && (y + j <= Utils.Size - 1))
+                            if((x+i>=0) && ((x+i)<=(Utils.Size-1)) && ((y+j) >= 0) && ((y + j) <= (Utils.Size - 1)))
                             {
                                 adjacentPoistions.Add(Utils.Str(x+i, y+j));
-                             //   adjacentPoistions.Add(Utils.Str(x, y + j));
-                               // adjacentPoistions.Add(Utils.Str(x+i, y));
                             }
                                
                         }
@@ -211,22 +211,36 @@ namespace Reactive
 
                 }
 
+                //find all the exits in the field of view
+    
+                Dictionary<string, int> posibbleExits = new Dictionary<string, int>();
+                
                 foreach (string k in ResourcePositions.Keys)
                 {
 
                     if (adjacentPoistions.Contains(ResourcePositions[k]))
                     {
-                        // update state of the explorer
-                       // ExplorerStates[sender] = Utils.State.Exiting;
+                        string[] pos = ResourcePositions[k].Split();
+                        posibbleExits.Add(k, ComputeDistanceInMoves(Convert.ToInt32(pos[0]), Convert.ToInt32(pos[1]),x,y
+                            ));
 
-                        Send(sender, Utils.Str("exit-found", ResourcePositions[k]));
-                        return;
                     }
+                }
+
+                //if at least one exit was found, choose the closest one
+                if (posibbleExits.Keys.Count > 0)
+                {
+                    //compute min
+
+                    var ordered = posibbleExits.OrderBy(k => k.Value).ToDictionary(k => k.Key, k => k.Value);
+                    Send(sender, Utils.Str("exit-found", ResourcePositions[ordered.Keys.First()]));
+                    return;
+
                 }
 
                 if (ExplorerStates[sender] == Utils.State.Following)
                 {
-                    Send(sender, "continue-following");
+                    Send(sender, "continue-follow");
                     return;
                 }
                 //if we find no exit in the proximity, search for other agents in this proximity
@@ -250,6 +264,11 @@ namespace Reactive
             Send(sender, "move");
 
             
+        }
+
+        private int ComputeDistanceInMoves(int desiredX, int desiredY, int _x, int _y)
+        {
+            return Math.Abs(desiredX - _x) + Math.Abs(desiredY - _y);
         }
 
         private void HandleOut(string sender, string position)

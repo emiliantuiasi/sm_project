@@ -86,12 +86,6 @@ namespace Reactive
                 Utils.State previousState = _state;
                 _state = State.Exiting;
 
-                
-
-                /*if((exitX!=-1 && exitY != -1)&& previousState==Utils.State.Following)
-                {
-                   //
-                }*/
                 int desiredX = Convert.ToInt32(parameters[0]);
                 int desiredY = Convert.ToInt32(parameters[1]);
 
@@ -191,32 +185,7 @@ namespace Reactive
             }
             else if (action == "follow-me")
             {
-                
                 exploreresInProximitySeeingExit.Add(message.Sender, Utils.Str(parameters[0], parameters[1]));
-
-                //if we received all the responses from all the explorers in proximity
-                if (exploreresInProximitySeeingExit.Count == awaitingCommunicationResponses)
-                {
-                    //take action and choose the closest explorer that can see an exit
-
-                    int minX = 0, minY = 0;
-                    string minKey = null;
-                    findClosestExplorer(out minKey, out minX, out minY);
-
-                    ComputeNextPositionWhenMovingTo(minX, minY);
-                    exitX = minX;
-                    exitY = minY;
-
-                    _state = State.Following;
-                    exploreresInProximitySeeingExit.Clear();
-                    awaitingCommunicationResponses = 0;
-
-                    //send smth to planet
-                    Send("planet", Utils.Str("state-change", (int)(Utils.State.Following)));
-                    Send("planet", Utils.Str("change", _x, _y));
-                    return;
-
-                }
 
             }
             else if (action == "move")
@@ -278,8 +247,8 @@ namespace Reactive
         private void findClosestExplorer(out string minKey, out int minX, out int minY)
         {
             minKey = null;
-            minX = 0;
-            minY = 0;
+            minX = -1;
+            minY = -1;
             foreach (string k in exploreresInProximitySeeingExit.Keys)
             {
                 string[] positionParts = exploreresInProximitySeeingExit[k].Split();
@@ -334,16 +303,10 @@ namespace Reactive
                 }
             }
         }
-        private bool IsMargin(int x, int y)
-        {
-            if (x == 0 || x == (Utils.Size-1) || y == 0 || y == (Utils.Size-1))
-                return true;
-            return false;
-        }
 
         private void OnTimedEvent(Object source, ElapsedEventArgs e)
         {
-            if (exploreresInProximitySeeingExit.Count == 0 && _state != Utils.State.Following && _state != Utils.State.Exiting)
+            if (exploreresInProximitySeeingExit.Count == 0 )
             {
                 _state = Utils.State.Emergency;
                 Send("planet", Utils.Str("state-change", (int)(Utils.State.Emergency)));
@@ -351,23 +314,23 @@ namespace Reactive
                 Send("planet", Utils.Str("change", _x, _y));
             }
             else
-            {
+            {   
+
+                _state = State.Following;
+
                 //it time is up, but we received at least one response act on it/them
                 int minX = 0, minY = 0;
                 string minKey = null;
                 findClosestExplorer(out minKey, out minX, out minY);
-
-                ComputeNextPositionWhenMovingTo(minX, minY);
-                exitX = minX;
-                exitY = minY;
-
-                _state = State.Following;
-                Send("planet", Utils.Str("state-change", (int)(Utils.State.Following)));
-
                 exploreresInProximitySeeingExit.Clear();
                 awaitingCommunicationResponses = 0;
-                //send smth to planet
+
+                exitX = minX;
+                exitY = minY;
+                ComputeNextPositionWhenMovingTo(exitX, exitY);
+
                
+                Send("planet", Utils.Str("state-change", (int)(Utils.State.Following)));
                 Send("planet", Utils.Str("change", _x, _y));
 
             }

@@ -7,7 +7,7 @@ namespace Reactive
     public class Utils
     {
         public static int Size = 16;
-        public static int FieldOfViewSize =2;
+        public static int FieldOfViewSize =3;
         public static int NoExplorers = 6;
         public static int NoResources = 5;
         public static long CoolDown = 3000;
@@ -26,7 +26,7 @@ namespace Reactive
             {State.Emergency, Brushes.Red},
             {State.Exiting, Brushes.Green},
             {State.Communicating, Brushes.Orange},
-             {State.Following, Brushes.Yellow},
+            {State.Following, Brushes.Yellow},
         };
 
         public static void ParseMessage(string content, out string action, out List<string> parameters)
