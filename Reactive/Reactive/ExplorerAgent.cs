@@ -190,7 +190,6 @@ namespace Reactive
             }
             else if (action == "move")
             {
-                // R5. If (true), then move randomly
                 MoveRandomly();
                 Send("planet", Utils.Str("change", _x, _y));
             }
@@ -278,9 +277,9 @@ namespace Reactive
         {
             return Math.Abs(desiredX - _x) + Math.Abs(desiredY - _y);
         }
+        // this method will be used to compute the next position when state=following or state=exiting
         private void ComputeNextPositionWhenMovingTo(int desiredX, int desiredY)
         {
-            //this method could be useful to act on move-to exit and move-to after an explorer
             int dx = _x - desiredX;
             int dy =  _y - desiredY;
             if(desiredX==0 || (desiredX == Utils.Size - 1))
@@ -303,7 +302,8 @@ namespace Reactive
                 }
             }
         }
-
+        
+        //event used for communication 
         private void OnTimedEvent(Object source, ElapsedEventArgs e)
         {
             if (exploreresInProximitySeeingExit.Count == 0 )
