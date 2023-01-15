@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Windows.Forms;
 using System.Timers;
-
+using System.Linq;
 
 namespace Reactive
 {
@@ -127,9 +127,10 @@ namespace Reactive
                 case "out":
                     HandleOut(message.Sender, parameters);
                     break;
-              /*  case "state-change":
+                case "state-change":
                     HandleStateChange(message.Sender, parameters);
-*/
+                    break;
+
                 default:
                     break;
             }
@@ -168,6 +169,7 @@ namespace Reactive
             //Only if the emergency alarm was set off then we should exit or search for exits in proximity 
             if (isEmergency)
             {
+                //if agent is positioned on exit
                 foreach (string k in ResourcePositions.Keys)
                 {
                     if (ResourcePositions[k] == position)
@@ -181,30 +183,92 @@ namespace Reactive
                 int x = Convert.ToInt32(t[0]);
                 int y = Convert.ToInt32(t[1]);
 
-                //Logic here will be modified to depend on Utils.FieldOfViewSize (?and maybe Direction (LEFT/RIGHT/UP/DOWN)
-               
+                if (ExplorerStates[sender] == Utils.State.Exiting)
+                {
+                    Send(sender, "continue-exit");
+                    return;
+                }
+
                 //Note: If FieldOfView >1, then the number of positions to be checked increases
+                List<string> adjacentPoistions = new List<string>();
+                //check validity of adjacentPositions
+                for( int i = -Utils.FieldOfViewSize; i <=Utils.FieldOfViewSize; i++)
+                {
+                    for(int j= -Utils.FieldOfViewSize; j <= Utils.FieldOfViewSize; ++j)
+                    {
+                        //if position is diff from the current one
+                        if(i!=0 || j != 0)
+                        {
+                            //check if we don't exceed borders
+                            if((x+i>=0) && ((x+i)<=(Utils.Size-1)) && ((y+j) >= 0) && ((y + j) <= (Utils.Size - 1)))
+                            {
+                                adjacentPoistions.Add(Utils.Str(x+i, y+j));
+                            }
+                               
+                        }
+                           
+                    }
 
-                string compPos1 = Utils.Str(x, y + 1);
-                string compPos2 = Utils.Str(x, y - 1);
-                string compPos3 = Utils.Str(x + 1, y);
-                string compPos4 = Utils.Str(x - 1, y);
+                }
 
+                //find all the exits in the field of view
+    
+                Dictionary<string, int> posibbleExits = new Dictionary<string, int>();
+                
                 foreach (string k in ResourcePositions.Keys)
                 {
 
-                    if (ResourcePositions[k] == compPos1 || ResourcePositions[k] == compPos2 || ResourcePositions[k] == compPos3 || ResourcePositions[k] == compPos4)
+                    if (adjacentPoistions.Contains(ResourcePositions[k]))
                     {
-                        // update state of the explorer
-                        ExplorerStates[sender] = Utils.State.Exiting;
+                        string[] pos = ResourcePositions[k].Split();
+                        posibbleExits.Add(k, ComputeDistanceInMoves(Convert.ToInt32(pos[0]), Convert.ToInt32(pos[1]),x,y
+                            ));
 
-                        Send(sender, Utils.Str("exit-found", ResourcePositions[k]));
-                        return;
                     }
                 }
 
+                //if at least one exit was found, choose the closest one
+                if (posibbleExits.Keys.Count > 0)
+                {
+                    //compute min
+
+                    var ordered = posibbleExits.OrderBy(k => k.Value).ToDictionary(k => k.Key, k => k.Value);
+                    Send(sender, Utils.Str("exit-found", ResourcePositions[ordered.Keys.First()]));
+                    return;
+
+                }
+
+                if (ExplorerStates[sender] == Utils.State.Following)
+                {
+                    Send(sender, "continue-follow");
+                    return;
+                }
+                //if we find no exit in the proximity, search for other agents in this proximity
+
+                List<string> explorersInProximity = new List<string>();
+                foreach (string k in ExplorerPositions.Keys)
+                {
+                    if (adjacentPoistions.Contains(ExplorerPositions[k]))
+                    {
+                        explorersInProximity.Add(k);
+                    }
+                }
+                if(explorersInProximity.Count > 0)
+                {
+                    Send(sender, Utils.Str("explorers-found", string.Join(",",explorersInProximity)));
+                    return;
+                }
+                
+
             }
             Send(sender, "move");
+
+            
+        }
+
+        private int ComputeDistanceInMoves(int desiredX, int desiredY, int _x, int _y)
+        {
+            return Math.Abs(desiredX - _x) + Math.Abs(desiredY - _y);
         }
 
         private void HandleOut(string sender, string position)
@@ -215,7 +279,27 @@ namespace Reactive
 
         private void HandleStateChange(string sender,string parameters)
         {
-            //might be used later for changing state to Utils.State.Communicating 
+            //might be used later for changing state to Utils.State.Communicating
+            int stateId = Convert.ToInt32(parameters);
+            switch (stateId)
+            {
+                case 0:
+                    ExplorerStates[sender] = Utils.State.Normal;
+                    break;
+                case 1:
+                    ExplorerStates[sender] = Utils.State.Emergency;
+                    break;
+                case 2:
+                    ExplorerStates[sender] = Utils.State.Exiting;
+                    break;
+                case 3:
+                    ExplorerStates[sender] = Utils.State.Communicating;
+                    break;
+                default:
+                    ExplorerStates[sender] = Utils.State.Following;
+                    break;
+
+            }
         }
 
 

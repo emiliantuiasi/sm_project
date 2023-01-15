@@ -7,20 +7,23 @@ namespace Reactive
     public class Utils
     {
         public static int Size = 16;
-        public static int FieldOfViewSize = 1;
+        public static int FieldOfViewSize =3;
         public static int NoExplorers = 6;
-        public static int NoResources = 3;
+        public static int NoResources = 5;
+        public static long CoolDown = 3000;
 
         public static int Delay = 200;
         public static Random RandNoGen = new Random();
-        public static int EmergencyTimeStart = RandNoGen.Next(6000)+6000;
-        public enum State { Normal, Emergency, Exiting, Communicating };
+        public static int EmergencyTimeStart = RandNoGen.Next(6000)+2000;
+        public static int CommunicationTimeWait = 1000;
+        public enum State { Normal, Emergency, Exiting, Communicating, Following };
         public static Dictionary<State, Brush> stateColors= new Dictionary<State, Brush>()
         {
-            {State.Normal, Brushes.Green},
+            {State.Normal, Brushes.Blue},
             {State.Emergency, Brushes.Red},
-            {State.Exiting, Brushes.Orange},
-            {State.Communicating, Brushes.Yellow},
+            {State.Exiting, Brushes.Green},
+            {State.Communicating, Brushes.Orange},
+            {State.Following, Brushes.Yellow},
         };
 
         public static void ParseMessage(string content, out string action, out List<string> parameters)
